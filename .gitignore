@@ -1,0 +1,4 @@
+*.o
+*.ko
+agt_version.h
+*.cmd
