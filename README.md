@@ -5,7 +5,7 @@ Iterface of FPGA is PCI Express bus.
 Build driver:
 
 	1. Need sources Linux in /usr/src/linux.
-	2. Run		sudo mod_make.sh
+	2. Run from current dir		sudo ./mod_make.sh
 
 
 Load dirver:
