@@ -18,7 +18,7 @@ static int counter_mram = 0;
 #define IO_BUF_SIZE (4*1024*1024)
 #define IO_BUF_SIZE_METERS (4*1024*1023)
 
-#define RW_BLOCK_SIZE 4
+#define RW_BLOCK_SIZE 8
 
 static void *io_buf = NULL;
 
@@ -83,11 +83,11 @@ static ssize_t read_mram(struct file *file, char __user *buf, size_t lbuf, loff_
 
 		for(i = 0; i < lCycl; i++)
 		{
-			*((unsigned int*)io_buf + i) = dgt_xpdev_readl(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE);
+			*((u64*)io_buf + i) = dgt_xpdev_readq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE);
 		}
 		for(i = 0; i < lrest; i++)
 		{
-			*((unsigned char*)io_buf + i + lCycl*RW_BLOCK_SIZE) = dgt_xpdev_readb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i);
+			*((u8*)io_buf + i + lCycl*RW_BLOCK_SIZE) = dgt_xpdev_readb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i);
 		}
 	}
 
@@ -134,14 +134,14 @@ static ssize_t write_mram(struct file *file, const char __user *buf, size_t lbuf
 
 		for(i = 0; i < lCycl; i++)
 		{
-			dgt_xpdev_writel(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE,  *((unsigned int*)io_buf + i));
-			dgt_xpdev_writel(kbuf, AXI4_MRAM_BANK1_REG + *ppos + i*RW_BLOCK_SIZE,  *((unsigned int*)io_buf + i));
+			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
+			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK1_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
 		}
 
 		for(i = 0; i < lrest; i++)
 		{
-			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((unsigned char*)io_buf + i));
-			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK1_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((unsigned char*)io_buf + i));
+			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
+			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK1_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
 		}
 
 		nbytes = lbuf;
