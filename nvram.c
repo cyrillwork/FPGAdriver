@@ -57,7 +57,6 @@ static int release_mram(struct inode *inode, struct file *file)
 
 static ssize_t read_mram(struct file *file, char __user *buf, size_t lbuf, loff_t *ppos)
 {
-	int i;
 	dgt_xpdev_t *kbuf;
 	int nbytes;
 	
@@ -75,21 +74,25 @@ static ssize_t read_mram(struct file *file, char __user *buf, size_t lbuf, loff_
 	
 	//printk(KERN_INFO "!!! read mram lbuf=%ld ppos=%d\n", lbuf, (int)*ppos);
 	kbuf = (dgt_xpdev_t *)file->private_data;
-	{
-		unsigned int lCycl, lrest;
-		
-		lCycl = lbuf/RW_BLOCK_SIZE;
-		lrest = lbuf%RW_BLOCK_SIZE;
 
-		for(i = 0; i < lCycl; i++)
-		{
-			*((u64*)io_buf + i) = dgt_xpdev_readq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE);
-		}
-		for(i = 0; i < lrest; i++)
-		{
-			*((u8*)io_buf + i + lCycl*RW_BLOCK_SIZE) = dgt_xpdev_readb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i);
-		}
-	}
+        memcpy_fromio(io_buf, kbuf->iobase + AXI4_MRAM_BANK0_REG + *ppos, lbuf);
+
+//	{
+//              int i;
+//		unsigned int lCycl, lrest;
+		
+//		lCycl = lbuf/RW_BLOCK_SIZE;
+//		lrest = lbuf%RW_BLOCK_SIZE;
+
+//		for(i = 0; i < lCycl; i++)
+//		{
+//			*((u64*)io_buf + i) = dgt_xpdev_readq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE);
+//		}
+//		for(i = 0; i < lrest; i++)
+//		{
+//			*((u8*)io_buf + i + lCycl*RW_BLOCK_SIZE) = dgt_xpdev_readb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i);
+//		}
+//	}
 
 	if(copy_to_user(buf, io_buf, lbuf))
 	{
@@ -106,7 +109,6 @@ static ssize_t read_mram(struct file *file, char __user *buf, size_t lbuf, loff_
 
 static ssize_t write_mram(struct file *file, const char __user *buf, size_t lbuf, loff_t *ppos)
 {
-	int i;
 	dgt_xpdev_t *kbuf;
 	//unsigned char data[MAX_RW_SIZE];
 	int nbytes;
@@ -125,29 +127,34 @@ static ssize_t write_mram(struct file *file, const char __user *buf, size_t lbuf
 	
 	kbuf = (dgt_xpdev_t *)file->private_data;
 	copy_from_user((unsigned char*)io_buf, buf, lbuf);
+
+        memcpy_toio(kbuf->iobase + AXI4_MRAM_BANK0_REG + *ppos, io_buf, lbuf);
+        memcpy_toio(kbuf->iobase + AXI4_MRAM_BANK1_REG + *ppos, io_buf, lbuf);
+
 	
-	{
-		unsigned int lCycl, lrest;
+//	{
+//              int i;
+//		unsigned int lCycl, lrest;
 		
-		lCycl = lbuf/RW_BLOCK_SIZE;
-		lrest = lbuf%RW_BLOCK_SIZE;
+//		lCycl = lbuf/RW_BLOCK_SIZE;
+//		lrest = lbuf%RW_BLOCK_SIZE;
 
-		for(i = 0; i < lCycl; i++)
-		{
-			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
-			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK1_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
-		}
+//		for(i = 0; i < lCycl; i++)
+//		{
+//			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK0_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
+//			dgt_xpdev_writeq(kbuf, AXI4_MRAM_BANK1_REG + *ppos + i*RW_BLOCK_SIZE,  *((u64*)io_buf + i));
+//		}
 
-		for(i = 0; i < lrest; i++)
-		{
-			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
-			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK1_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
-		}
+//		for(i = 0; i < lrest; i++)
+//		{
+//			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK0_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
+//			dgt_xpdev_writeb(kbuf, AXI4_MRAM_BANK1_REG + *ppos + lCycl*RW_BLOCK_SIZE + i,  *((u8*)io_buf + i));
+//		}
+//	}
 
-		nbytes = lbuf;
-		*ppos += nbytes;
-	}
-	
+        nbytes = lbuf;
+        *ppos += nbytes;
+
 	//printk(KERN_INFO "!!! write device=%s nbytes=%d ppos=%d\n\n", MRAM_NAME, nbytes, (int)*ppos);
 	
 	return nbytes;
